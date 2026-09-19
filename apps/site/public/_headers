@@ -1,0 +1,50 @@
+# Response headers for the whole origin — every path, including anything a corner
+# ships under /osu/. A corner cannot forget a security header, because it does not
+# own this file.
+#
+# Cloudflare parses this file itself at deploy time. It is never served, and it
+# costs no Worker invocation: static assets are served without running any script.
+#
+# Rules are additive, and the later, more specific match wins per header.
+
+/*
+  Content-Security-Policy: default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline'; img-src 'self' data:; font-src 'self'; connect-src 'self' https://gql.twitch.tv; frame-src https://player.twitch.tv https://www.twitch.tv; worker-src 'self'; manifest-src 'self'; object-src 'none'; base-uri 'none'; form-action 'none'; frame-ancestors 'none'; upgrade-insecure-requests
+  X-Content-Type-Options: nosniff
+  Referrer-Policy: strict-origin-when-cross-origin
+  Permissions-Policy: accelerometer=(), camera=(), geolocation=(), gyroscope=(), magnetometer=(), microphone=(), payment=(), usb=()
+  X-Frame-Options: DENY
+  Cross-Origin-Opener-Policy: same-origin
+  Cross-Origin-Resource-Policy: same-origin
+  Strict-Transport-Security: max-age=31536000; includeSubDomains
+
+# Notes on the two deliberate choices above, so neither is mistaken for an oversight:
+#
+#   style-src 'unsafe-inline' — kept because the risk it carries is near-zero here
+#   (a fully static site with no user-controlled content and no server-rendered
+#   HTML) while the cost of removing it is real: it blocks inline `style` and
+#   `<style>`, which React's style props and CSSOM-driven animation rely on.
+#   Revisit if the site ever renders anything a visitor can influence.
+#
+#   connect-src includes gql.twitch.tv because the live-status check runs in the
+#   browser. A strict CSP kills it silently, so this entry is load-bearing.
+#
+#   Cross-Origin-Embedder-Policy is deliberately NOT set: `require-corp` would
+#   break the Twitch iframe.
+#
+#   frame-ancestors 'none' means nothing may embed this origin. If a replay viewer
+#   is ever meant to be embeddable, that route needs its own policy.
+#
+#   Enabling Cloudflare Web Analytics requires adding
+#   https://static.cloudflareinsights.com to script-src and
+#   https://cloudflareinsights.com to connect-src. Left out until that is decided.
+#
+#   HSTS omits `preload`: submission is effectively irreversible for months, so it
+#   is a deliberate later decision, not a default.
+
+# Fingerprinted build output never changes, so it is immutable for a year. HTML
+# keeps revalidating, which is what lets a deploy take effect immediately.
+/assets/*
+  Cache-Control: public, max-age=31536000, immutable
+
+/osu/assets/*
+  Cache-Control: public, max-age=31536000, immutable

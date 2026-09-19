@@ -1,0 +1,16 @@
+[package]
+name = "poblin-worker"
+description = "Thin workers-rs adapter over poblin-core. Not deployed in Part 1."
+version.workspace = true
+edition.workspace = true
+rust-version.workspace = true
+publish = false
+
+[lib]
+crate-type = ["cdylib"]
+
+[dependencies]
+worker.workspace = true
+serde.workspace = true
+serde_json.workspace = true
+poblin-core.workspace = true

@@ -1,0 +1,21 @@
+# Repo root: asset paths resolve relative to this file, not the cwd.
+name = "poblin-site"
+compatibility_date = "2025-04-01"
+
+# No `main`. An assets-only Worker invokes no script, so nothing is metered.
+# The first API route adds main = "crates/worker/build/index.js" plus
+# run_worker_first = ["/api/*"] under [assets].
+workers_dev = false
+preview_urls = true
+
+# Needs the poblin.live zone (plan step 0); `wrangler deploy` fails until then.
+routes = [
+	{ pattern = "poblin.live", custom_domain = true },
+	{ pattern = "www.poblin.live", custom_domain = true },
+]
+
+[assets]
+directory = "apps/site/dist"
+
+# Nearest 404.html, with a real 404 status, so each corner can ship its own.
+not_found_handling = "404-page"

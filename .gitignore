@@ -1,0 +1,33 @@
+# ---- secrets ----
+# Cloudflare credentials live in .dev.vars locally and in GitHub Actions secrets.
+# The .env.example exception stays even though no env file exists yet: without it,
+# the first one someone adds is ignored silently.
+.env
+.env.*
+!.env.example
+.dev.vars
+.dev.vars.*
+*.pem
+*.key
+
+# ---- node ----
+node_modules/
+.pnpm-store/
+*.tsbuildinfo
+npm-debug.log*
+pnpm-debug.log*
+
+# ---- build output ----
+target/
+dist/
+# 594 KB, emitted by `wrangler types`
+worker-configuration.d.ts
+
+# ---- cloudflare ----
+.wrangler/
+
+# ---- editors / os ----
+.DS_Store
+Thumbs.db
+.idea/
+.vscode/*

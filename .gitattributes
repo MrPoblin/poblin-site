@@ -1,0 +1,4 @@
+# Force LF in the repository regardless of a contributor's core.autocrlf. CI runs on
+# Linux and Cloudflare parses _headers and ci.yml, so the bytes have to be identical
+# everywhere rather than dependent on whose machine committed.
+* text=auto eol=lf

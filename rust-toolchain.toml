@@ -1,0 +1,7 @@
+# Pins the compiler for every `cargo` invocation in this repo, on every machine and
+# in CI. `rustup` installs this toolchain and the components below on first use, so
+# CI needs no Rust setup action — which is one fewer third-party action to trust.
+[toolchain]
+channel = "1.98.1"
+components = ["rustfmt", "clippy"]
+targets = ["wasm32-unknown-unknown"]

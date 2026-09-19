@@ -1,0 +1,23 @@
+{
+  "name": "poblin-site",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "description": "poblin.live — bio page and corners.",
+  "packageManager": "pnpm@12.4.2",
+  "engines": {
+    "node": ">=24.21.0",
+    "pnpm": ">=12.4.2"
+  },
+  "scripts": {
+    "build": "pnpm --filter \"./apps/*\" run build",
+    "check": "pnpm --filter \"./apps/*\" run check",
+    "dev": "pnpm --filter @poblin/site run dev",
+    "assemble": "node tools/assemble.mjs",
+    "preview": "pnpm build && pnpm assemble && wrangler dev",
+    "deploy": "wrangler deploy"
+  },
+  "devDependencies": {
+    "wrangler": "4.132.0"
+  }
+}

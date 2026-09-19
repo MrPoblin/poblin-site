@@ -1,0 +1,130 @@
+/*
+ * 404 page.
+ *
+ * Built as a Vite entry (see vite.config.ts) rather than dropped in public/, so it
+ * gets the real Fredoka face and the same design tokens as the bio page instead of
+ * a system-font lookalike. An HTML entry's output path is its path relative to the
+ * app root, which is why this file sits next to index.html: Cloudflare must find
+ * dist/404.html.
+ *
+ * It imports index.css, which is the single definition of the theme, the fonts and
+ * the base layer. That costs a few KB of Tailwind preflight on a leaf page, in
+ * exchange for the tokens never being able to drift from the main page.
+ *
+ * The artwork is `src/assets/dizzy.webp`, generated once from `Assets/dizzy.png`
+ * with:
+ *
+ *   magick dizzy.png -trim +repage -define webp:lossless=true dizzy.webp
+ *
+ * The `-trim` matters: the source canvas is 512x512 but the drawing only occupies
+ * 404x384+65+0, so seven eighths of the file was transparent padding — 128px of it
+ * below the mouth. That padding is why the heading looked so far from the picture;
+ * no CSS gap could compensate for it. Trimming makes --notfound-face-size mean the
+ * size of the artwork rather than of its canvas.
+ *
+ * Lossless WebP rather than AVIF: AVIF measured ~4 KB smaller but is not bit-exact
+ * (it shifts flat fills by 1/255 through YUV) and is unsupported on Safari
+ * 15.4-16.3, which this site otherwise runs on. The source image is already
+ * transparent, so nothing had to be keyed out.
+ */
+@import "./index.css";
+
+:root {
+  /* The knobs. Everything below derives from these, so adjusting the layout means
+     changing a number here rather than hunting through the rules. */
+  --notfound-bg: #b8d9d9;
+  /* the artwork's mouth colour, sampled from Assets/dizzy.png at (256,350) */
+  --notfound-accent: #64a3a4;
+  /* 88% accent over black. Written out rather than as color-mix, because the CSS
+     minifier emits a var() fallback for color-mix that resolves to the base colour
+     unchanged — a hover that silently does nothing on older browsers. */
+  --notfound-accent-hover: #588f90;
+  --notfound-line: #000000;
+  --notfound-face-size: clamp(180px, 44vmin, 320px);
+  --notfound-code-size: clamp(3rem, 12vmin, 5.5rem);
+  --notfound-label-size: clamp(0.85rem, 2.4vmin, 1.05rem);
+  --notfound-button-text-size: clamp(0.85rem, 2.2vmin, 1rem);
+  /* The label gap is negative on purpose. The h1's line box is exactly 1em tall, but
+     "404" has no descenders, so the font's descender leaves ~0.125em of dead space
+     under the digits — about 11px at the largest size. A positive margin on top of
+     that reads as roughly a gap and a half, so the label is pulled back into the
+     dead space instead of stacking on it. */
+  --notfound-gap-face-code: clamp(0.75rem, 2.2vmin, 1.75rem);
+  --notfound-gap-code-label: clamp(-0.35rem, -0.8vmin, -0.1rem);
+  --notfound-gap-label-button: clamp(1.25rem, 4vmin, 2rem);
+  /* the artwork's line weight, scaled down from its 512px canvas */
+  --notfound-stroke: 3px;
+}
+
+body {
+  /* index.css sets a night-sky body background; this page is the flat one. */
+  background-color: var(--notfound-bg);
+  color: var(--color-ink);
+}
+
+.notfound {
+  display: grid;
+  justify-items: center;
+  align-content: center;
+  min-height: 100dvh;
+  padding: 2rem;
+  text-align: center;
+}
+
+.notfound__face {
+  width: var(--notfound-face-size);
+  height: auto;
+  margin-bottom: var(--notfound-gap-face-code);
+}
+
+.notfound__code {
+  /* Family and weight come from the base layer's h1 rule, which is where the bio
+     page's heading style lives. Only the size is set here. */
+  font-size: var(--notfound-code-size);
+  line-height: 1;
+  letter-spacing: -0.01em;
+}
+
+.notfound__label {
+  margin-top: var(--notfound-gap-code-label);
+  font-family: var(--font-display);
+  font-size: var(--notfound-label-size);
+  font-weight: 500;
+  /* Line-height 1 so the gap knob measures the real distance. The inherited 1.5 put
+     ~0.25em of half-leading above the glyphs, which is more dead space for the
+     negative margin above to fight through. */
+  line-height: 1;
+  /* softer than the number, the same way the bio page treats secondary label text */
+  opacity: 0.7;
+}
+
+.notfound__home {
+  display: inline-block;
+  margin-top: var(--notfound-gap-label-button);
+  padding: 0.7em 1.7em;
+  border: var(--notfound-stroke) solid var(--notfound-line);
+  border-radius: 999px;
+  background-color: var(--notfound-accent);
+  /* black on #64a3a4 is ~7.6:1, so it clears AAA; white on it is 2.8:1 and would not */
+  color: var(--notfound-line);
+  font-family: var(--font-display);
+  font-size: var(--notfound-button-text-size);
+  font-weight: 600;
+  text-decoration: none;
+  transition: transform 150ms ease, background-color 150ms ease;
+}
+
+.notfound__home:hover {
+  background-color: var(--notfound-accent-hover);
+}
+
+.notfound__home:active {
+  transform: translateY(1px);
+}
+
+/* index.css draws focus rings in cream, which is the right call against the night
+   sky and nearly invisible against this pale background. Overridden here. */
+.notfound__home:focus-visible {
+  outline: var(--notfound-stroke) solid var(--color-ink);
+  outline-offset: 3px;
+}
