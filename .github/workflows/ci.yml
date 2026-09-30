@@ -61,7 +61,12 @@ jobs:
     runs-on: ubuntu-latest
     env:
       GIT_SHA: ${{ github.sha }}
+      CARGO_HOME: ${{ github.workspace }}/.cargo
     steps:
+      # The cargo home is relocated into the workspace so the cache keys below
+      # hold repo-relative paths; nothing on the runner's own home is named.
+      - name: Put the cargo home's bin on PATH
+        run: echo "$CARGO_HOME/bin" >> "$GITHUB_PATH"
       - name: Checkout
         uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
@@ -99,8 +104,11 @@ jobs:
       - name: Test
         run: cargo test -p poblin-core
 
+      # --force because the cached cargo bin is restored below: a restore hands back
+      # the previous run's binary and `cargo install` otherwise aborts with "binary
+      # `worker-build` already exists in destination".
       - name: Install worker-build
-        run: cargo install worker-build --version 0.8.6 --locked
+        run: cargo install worker-build --version 0.8.6 --locked --force
 
       # The point of Part 1 having a Worker crate at all: keep the Rust -> wasm
       # toolchain verified on every push, while the surface is one handler, rather
@@ -113,7 +121,12 @@ jobs:
     name: rust advisories
     runs-on: ubuntu-latest
     if: github.event_name == 'schedule' || github.event_name == 'workflow_dispatch'
+    env:
+      CARGO_HOME: ${{ github.workspace }}/.cargo
     steps:
+      - name: Put the cargo home's bin on PATH
+        run: echo "$CARGO_HOME/bin" >> "$GITHUB_PATH"
+
       - name: Checkout
         uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
@@ -131,8 +144,9 @@ jobs:
           key: ${{ runner.os }}-cargo-audit-${{ hashFiles('Cargo.lock') }}
           restore-keys: ${{ runner.os }}-cargo-audit-
 
+      # --force for the same reason as worker-build above.
       - name: Install cargo-audit
-        run: cargo install cargo-audit --locked
+        run: cargo install cargo-audit --locked --force
 
       - name: Audit
         run: cargo audit
