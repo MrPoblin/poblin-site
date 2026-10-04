@@ -177,8 +177,11 @@
  * The osu! corner disc
  *
  * Every value is measured off osu!'s own mark rather than invented: the ring is 11% of the disc's
- * radius thick (5.5% of the diameter, per side), the disc is `#f663a5` at the top and `#d2558d` at
- * the bottom, and the mesh is a dark pink over that gradient.
+ * radius thick (5.5% of the diameter, per side), the mesh is a darkening over the circle rather than
+ * a colour of its own, and the triangle sizes are the mark's own range.
+ *
+ * **The circle is the page's sky**, not osu!'s pink - see the colour block on `.osu-disc` for the two
+ * stops and where they come from.
  *
  * **The whole disc is `em`.** `--size` is the disc's diameter *and* its `font-size`, so every other
  * measurement here is a fraction of the disc and changing one number resizes the mark coherently.
@@ -204,16 +207,36 @@
 
 .osu-disc {
   /* -----------------------------------------------------------------------------------------------
-   * The disc's colours. These are the two values to edit to try another circle: everything else in
-   * the mark is derived, and the mesh is drawn in black and blended, so it darkens whatever these
-   * are without needing a colour of its own.
+   * The disc's colours.
+   *
+   * The circle is made of the page's own sky: the two stops are lifted straight out of the backdrop
+   * gradient in `SkyBackdrop.tsx`, its brightest and its deep, so the mark reads as a piece of the
+   * sky rather than an object sitting on top of it.
+   *
+   * The originals, for reference - osu!'s own pink, sampled off the mark:
+   *
+   *   --disc-top: #f663a5;
+   *   --disc-bottom: #d2558d;
+   *
+   * Changing these two is the whole colour change: the mesh is drawn in black and blended, and the
+   * three shadows are mixed from `--disc-shade` below, so nothing else carries a colour of its own.
    * --------------------------------------------------------------------------------------------- */
-  --disc-top: #f663a5;
-  --disc-bottom: #d2558d;
+  --disc-top: #57a0ee;
+  --disc-bottom: #133a8b;
+
+  /**
+   * The shadows: the inner one on the circle, and the ones under both lines of text.
+   *
+   * Mixed from the circle's own dark end instead of picked. They used to be hardcoded pink
+   * (`rgba(109, 20, 60, 0.32)` inside, `rgba(96, 16, 52, 0.45)` and `0.4` under the text), so
+   * recolouring the circle left three pink shadows behind.
+   */
+  --disc-shade: color-mix(in srgb, var(--disc-bottom) 40%, #04102a);
+
   /** How hard the mesh bites, as the most it darkens the disc by. 0.22 is osu!'s own subtleness. */
   --mesh: 0.22;
 
-  --size: 14rem;
+  --size: 18rem;
 
   position: relative;
   display: block;
@@ -240,8 +263,8 @@
      radial gradient lands the ring and the middle element in completely different colours. */
   background: linear-gradient(180deg, var(--disc-top), var(--disc-bottom));
   /* The inner shadow. It reads as the disc being lit from the top: darkest where the ring meets it,
-     which is what stops the pink from looking like a flat sticker under the white. */
-  box-shadow: inset 0 0 0.1em 0.03em rgba(109, 20, 60, 0.32);
+     which is what stops the circle from looking like a flat sticker under the white. */
+  box-shadow: inset 0 0 0.1em 0.03em color-mix(in srgb, var(--disc-shade) 60%, transparent);
   /* Holds the mesh's blend inside the disc. Without it the blend would reach through to the sky. */
   isolation: isolate;
 }
@@ -307,7 +330,7 @@
   color: #ffffff;
   /* The wordmark is artwork, not text: it carries a shadow the way the mark's does. The full-colour
      cookie's shadow is part of the logo, so it is not decoration here. */
-  text-shadow: 0 0.045em 0.07em rgba(96, 16, 52, 0.45);
+  text-shadow: 0 0.045em 0.07em color-mix(in srgb, var(--disc-shade) 50%, transparent);
 }
 
 .osu-disc__sub {
@@ -319,7 +342,7 @@
   line-height: 1;
   letter-spacing: 0.08em;
   color: #ffffff;
-  text-shadow: 0 0.04em 0.07em rgba(96, 16, 52, 0.4);
+  text-shadow: 0 0.04em 0.07em color-mix(in srgb, var(--disc-shade) 45%, transparent);
 }
 
 @keyframes osu-beat {
