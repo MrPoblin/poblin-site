@@ -9,6 +9,7 @@ import {
 import { CategoryGrid } from "./components/CategoryGrid";
 import { LiveBadge } from "./components/LiveBadge";
 import { Nav } from "./components/Nav";
+import { OsuCorner } from "./components/OsuCorner";
 import { Scene } from "./components/Scene";
 import { SkyBackdrop } from "./components/SkyBackdrop";
 import { StreamSection } from "./components/StreamSection";
@@ -300,6 +301,10 @@ export default function App() {
             </div>
           </div>
         </section>
+
+        {/* The projects, under the links and above the 24/7 stream: the corner is the first one,
+            and the ones after it land beside it rather than below. */}
+        <OsuCorner />
 
         {showLoop ? <StreamSection /> : null}
       </main>

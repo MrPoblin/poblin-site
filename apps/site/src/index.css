@@ -155,13 +155,239 @@
   animation: live-pulse 2s ease-out infinite;
 }
 
+/* ---------------------------------------------------------------------------------------------
+ * The move into the osu! corner
+ *
+ * Two documents on one origin animate between each other, and both have to opt in. The corner
+ * carries `.brand { view-transition-name: brand }` and this at-rule already; this is the site's
+ * half, and while it was missing the move was a hard cut. A cross-document transition is Chrome
+ * 126+, Edge 126+ and Safari 18.2+; Firefox ignores the at-rule and navigates instantly, which is
+ * the whole reason there is no JavaScript here to feature-detect and no fallback to maintain.
+ *
+ * `.osu-corner__link` below is the other half of the same pair: exactly one element may hold a
+ * `view-transition-name` at a time, so the name lives on the one link that goes to the corner.
+ * ------------------------------------------------------------------------------------------- */
+@media (prefers-reduced-motion: no-preference) {
+  @view-transition {
+    navigation: auto;
+  }
+}
+
+/* ---------------------------------------------------------------------------------------------
+ * The osu! corner disc
+ *
+ * Every value is measured off osu!'s own mark rather than invented: the ring is 11% of the disc's
+ * radius thick (5.5% of the diameter, per side), the disc is `#f663a5` at the top and `#d2558d` at
+ * the bottom, and the mesh is a dark pink over that gradient.
+ *
+ * **The whole disc is `em`.** `--size` is the disc's diameter *and* its `font-size`, so every other
+ * measurement here is a fraction of the disc and changing one number resizes the mark coherently.
+ * ------------------------------------------------------------------------------------------- */
+.osu-corner__link {
+  /* The shared element in the transition above. */
+  view-transition-name: brand;
+  display: block;
+  border-radius: 50%;
+  /* Overshooting curve: the disc passes its mark and settles back, which is what "bounces". Quick
+     and tight rather than slow and loose - it is a response to the pointer, and a response that takes
+     half a second reads as a delay. Only the transform is transitioned. */
+  transition: transform 240ms cubic-bezier(0.34, 1.56, 0.64, 1);
+}
+
+.osu-disc__beat {
+  display: block;
+  border-radius: 50%;
+  /* One beat per second: 60 BPM, deliberately slow. A fast pulse on a page you are reading rather
+     than playing is a distraction, and this one has to survive sitting in the corner of the eye. */
+  animation: osu-beat 1s linear infinite;
+}
+
+.osu-disc {
+  /* -----------------------------------------------------------------------------------------------
+   * The disc's colours. These are the two values to edit to try another circle: everything else in
+   * the mark is derived, and the mesh is drawn in black and blended, so it darkens whatever these
+   * are without needing a colour of its own.
+   * --------------------------------------------------------------------------------------------- */
+  --disc-top: #f663a5;
+  --disc-bottom: #d2558d;
+  /** How hard the mesh bites, as the most it darkens the disc by. 0.22 is osu!'s own subtleness. */
+  --mesh: 0.22;
+
+  --size: 14rem;
+
+  position: relative;
+  display: block;
+  width: var(--size);
+  height: var(--size);
+  /* Em is measured against this, so the ring, the text and the mesh are all fractions of the disc. */
+  font-size: var(--size);
+  border-radius: 50%;
+  background: #ffffff;
+  /* Down and slightly right, as the reference: the disc sits above the page rather than in it. */
+  box-shadow:
+    0 0.09em 0.2em -0.07em rgba(4, 16, 42, 0.55),
+    0 0.02em 0.05em rgba(4, 16, 42, 0.2);
+}
+
+/* The ring is the disc's own white showing through: an inset of 5.5% per side leaves 11% of the
+   radius, which is what the mark measures. */
+.osu-disc__face {
+  position: absolute;
+  inset: 5.5%;
+  overflow: hidden;
+  border-radius: 50%;
+  /* A linear gradient, never a radial one - osu!'s guidelines call that out by name, because a
+     radial gradient lands the ring and the middle element in completely different colours. */
+  background: linear-gradient(180deg, var(--disc-top), var(--disc-bottom));
+  /* The inner shadow. It reads as the disc being lit from the top: darkest where the ring meets it,
+     which is what stops the pink from looking like a flat sticker under the white. */
+  box-shadow: inset 0 0 0.1em 0.03em rgba(109, 20, 60, 0.32);
+  /* Holds the mesh's blend inside the disc. Without it the blend would reach through to the sky. */
+  isolation: isolate;
+}
+
+/* The mesh's fade, and the reason it is its own element: a mask has to be the size of the disc to
+   be readable, while the layer under it is one tile taller so the scroll never exposes an edge. */
+.osu-disc__mesh {
+  position: absolute;
+  inset: 0;
+  /* **One fade over the whole field, never a fade per triangle.** The mask is a plain vertical
+     gradient across the disc, so a triangle rising through it dissolves gradually and one that is
+     large enough to span the fade shows the gradient *inside itself* - which is what osu!'s own
+     artwork does. Small triangles cannot show that: each one sits inside a narrow band of the
+     gradient, so every triangle ends up evenly faded and the whole thing reads as a set of ghosts.
+     That is a size problem, not a mask problem, and it is why the triangles are as big as they are. */
+  mask-image: linear-gradient(
+    to bottom,
+    rgba(0, 0, 0, calc(var(--mesh) * 0.3)),
+    rgba(0, 0, 0, calc(var(--mesh) * 0.6)) 45%,
+    rgba(0, 0, 0, var(--mesh)) 78%
+  );
+}
+
+.osu-disc__tri {
+  position: absolute;
+  top: 0;
+  right: 0;
+  left: 0;
+  /* One tile taller than the disc, so translating by a tile never exposes an unpainted edge. */
+  height: calc(100% + 0.9em);
+  background-repeat: repeat;
+  background-size: 0.9em 0.9em;
+  /* The mesh is black and multiplied into the disc, so it darkens whatever colour the disc is - the
+     one thing that makes `--disc-top` and `--disc-bottom` safe to change on their own. */
+  mix-blend-mode: multiply;
+  /* 0.9em of travel, matching the tile. 40s is slow on purpose: the mesh is a texture the disc has,
+     not something moving on top of it. */
+  animation: osu-tri 40s linear infinite;
+}
+
+/* Two lines, lifted off centre. A block centred in a circle reads low - the ring's bottom arc is
+   wider than its top, so the eye wants the space above the wordmark to be the larger one. */
+.osu-disc__text {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 0;
+  padding-bottom: 0.1em;
+}
+
+.osu-disc__word {
+  font-family: var(--font-display);
+  font-size: 0.4em;
+  font-weight: 500;
+  /* Under 1 on purpose. A line box is taller than the ink in it, and that spare room is what puts a
+     gap between two lines that were never spaced apart - the wordmark's descender space is doing the
+     separating, not a margin. Tightening the box pulls the line under it up without moving the ink. */
+  line-height: 0.86;
+  letter-spacing: -0.02em;
+  color: #ffffff;
+  /* The wordmark is artwork, not text: it carries a shadow the way the mark's does. The full-colour
+     cookie's shadow is part of the logo, so it is not decoration here. */
+  text-shadow: 0 0.045em 0.07em rgba(96, 16, 52, 0.45);
+}
+
+.osu-disc__sub {
+  font-family: var(--font-sans);
+  /* Sized against the wordmark's x-height rather than picked: osu! is lowercase, so its ink is about
+     half its font size, and this line is set to a little under a third of that. */
+  font-size: 0.145em;
+  font-weight: 700;
+  line-height: 1;
+  letter-spacing: 0.08em;
+  color: #ffffff;
+  text-shadow: 0 0.04em 0.07em rgba(96, 16, 52, 0.4);
+}
+
+@keyframes osu-beat {
+  0% {
+    transform: scale(1);
+  }
+  /* Barely there. A beat you notice is a beat that pulls the eye off the page every second; this one
+     only has to say the disc is alive. */
+  8% {
+    transform: scale(0.985);
+  }
+  26% {
+    transform: scale(1.002);
+  }
+  46%,
+  100% {
+    transform: scale(1);
+  }
+}
+
+@keyframes osu-tri {
+  from {
+    transform: translateY(0);
+  }
+  to {
+    transform: translateY(-0.9em);
+  }
+}
+
+/* The pointer gate is mandatory: a touch screen fires a hover on tap and would leave the disc
+   stuck expanded. */
+@media (hover: hover) and (pointer: fine) {
+  .osu-corner__link:hover {
+    transform: scale(1.12);
+  }
+}
+
+.osu-corner__link:focus-visible {
+  transform: scale(1.12);
+}
+
+@media (max-width: 639px) {
+  .osu-disc {
+    --size: 11rem;
+  }
+}
+
 @media (prefers-reduced-motion: reduce) {
   html {
     scroll-behavior: auto;
   }
 
   .sun-breathe,
-  .live-dot {
+  .live-dot,
+  .osu-disc__beat,
+  .osu-disc__tri {
     animation: none;
+  }
+
+  /* No travel at all, rather than a shorter one. What is left is a state change that does not
+     move: the disc grows darker and closer, which is a hover you can still read. */
+  .osu-corner__link {
+    transition: filter 200ms ease-out;
+  }
+
+  .osu-corner__link:hover,
+  .osu-corner__link:focus-visible {
+    transform: none;
+    filter: brightness(1.06);
   }
 }

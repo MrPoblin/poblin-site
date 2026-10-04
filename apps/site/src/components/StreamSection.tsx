@@ -1,14 +1,11 @@
 import { useEffect, useRef, useState } from "react";
 import { ArrowUpRight, Broadcast } from "@phosphor-icons/react";
 import { streamChannel } from "../data/links";
-import { DESKTOP_MIN, STAGE_VH } from "../lib/scene";
 import { twitchEmbedUrl } from "../lib/twitch";
-import { useMediaQuery } from "../lib/viewport";
 
 export function StreamSection() {
   const frameRef = useRef<HTMLDivElement | null>(null);
   const [nearby, setNearby] = useState(false);
-  const isDesktop = useMediaQuery(`(min-width: ${DESKTOP_MIN}px)`);
 
   // The Twitch player is heavy, so it only loads once the frame is in sight.
   useEffect(() => {
@@ -28,16 +25,12 @@ export function StreamSection() {
   }, [nearby]);
 
   return (
+    // No negative margin on this section. The projects block above owns the pull over the pinned
+    // hero, and a second one would drag this panel up through it; riding in that block's wake is
+    // what puts this section on the fold at the first pixel of scrolling instead of a screen later.
     <section
       id="stream"
       className="relative mx-auto w-full max-w-5xl px-5 pb-14 pt-8 sm:pb-20 md:pt-0"
-      // The hero's stage is longer than a screen, and the difference is exactly
-      // the part where the page is not moving. Pulling this section up by that
-      // much drops its top edge on the fold, so the whole panel rides up over the
-      // pinned hero from the very first pixel of scrolling - while at rest it is
-      // still out of sight. A phone has no pinned stage, so it takes the plain
-      // gap instead.
-      style={isDesktop ? { marginTop: `-${STAGE_VH - 100}vh` } : undefined}
     >
       <div className="glass-panel rounded-[32px] p-4 sm:p-6">
         <div className="mb-4 flex flex-wrap items-center justify-between gap-3">
