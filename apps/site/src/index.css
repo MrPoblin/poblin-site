@@ -205,6 +205,14 @@
   animation: osu-beat 1s linear infinite;
 }
 
+/* Under the pointer the disc is being played with, so the beat doubles to 120 BPM. Only the duration
+   changes - same pulse, twice as quick. Changing a duration mid-animation can nudge the phase, and
+   the amplitude here is a 1.5% scale, which is far too small for that to read as a jump. */
+.osu-corner__link:hover .osu-disc__beat,
+.osu-corner__link:focus-visible .osu-disc__beat {
+  animation-duration: 0.5s;
+}
+
 .osu-disc {
   /* -----------------------------------------------------------------------------------------------
    * The disc's palette.
