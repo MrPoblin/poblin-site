@@ -32,14 +32,15 @@
  * side times `√3/2` - a triangle drawn as tall as it is wide is isoceles and reads wrong at a
  * glance even when nobody can say why.
  *
- * The tile is a little under the disc's height, which makes the triangles a third of the disc at the
- * top of their range. Sizes swing widely on purpose: osu!'s own field mixes triangles several times
- * bigger than each other, and a narrow range reads as a texture rather than as the motif.
+ * The tile is a little under the disc's height, which makes the triangles a little over a third of
+ * the disc at the top of their range. Sizes swing widely on purpose: osu!'s own field mixes
+ * triangles several times bigger than each other, and a narrow range reads as a texture rather than
+ * as the motif.
  *
  * Sizes are in tile units, where the tile is `TILE.size` wide and drawn at `0.9em` (see the
- * stylesheet). So `min: 24` is 24/200 of 0.9em, or about 11% of the disc.
+ * stylesheet). So `min: 30` is 30/200 of 0.9em, or about 13% of the disc, and `max: 90` about 40%.
  */
-const TILE = { size: 200, count: 16, min: 24, max: 76, stroke: 0.7 };
+const TILE = { size: 200, count: 16, min: 30, max: 90, stroke: 0.7 };
 
 const EQUILATERAL = Math.sqrt(3) / 2;
 

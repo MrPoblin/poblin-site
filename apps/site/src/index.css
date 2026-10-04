@@ -207,31 +207,25 @@
 
 .osu-disc {
   /* -----------------------------------------------------------------------------------------------
-   * The disc's colours.
+   * The disc's palette.
    *
-   * The circle is made of the page's own sky: the two stops are lifted straight out of the backdrop
-   * gradient in `SkyBackdrop.tsx`, its brightest and its deep, so the mark reads as a piece of the
-   * sky rather than an object sitting on top of it.
+   * `--disc-face` is the whole face and may be any background at all: one colour, the two-stop sky
+   * gradient below, or a dozen stops. It is the only place a hue lives.
    *
-   * The originals, for reference - osu!'s own pink, sampled off the mark:
+   * Everything else on the disc is neutral black or white and blended - the mesh is black and
+   * multiplied in, the shading is a black inset and a white lift, and the text shadows are black.
+   * None of them carries a colour, so the face can be repainted to any palette and the ring, the
+   * mesh and the shadows still darken or lighten it instead of clashing with it. Keep that rule:
+   * the only hue here is the face.
    *
-   *   --disc-top: #f663a5;
-   *   --disc-bottom: #d2558d;
-   *
-   * Changing these two is the whole colour change: the mesh is drawn in black and blended, and the
-   * three shadows are mixed from `--disc-shade` below, so nothing else carries a colour of its own.
+   * The default face is lifted straight out of the backdrop gradient in `SkyBackdrop.tsx`, its
+   * brightest and its deep, so the mark reads as a piece of the sky rather than an object on top of
+   * it. osu!'s own pink, for reference: #f663a5 to #d2558d.
    * --------------------------------------------------------------------------------------------- */
   --disc-top: #57a0ee;
   --disc-bottom: #133a8b;
-
-  /**
-   * The shadows: the inner one on the circle, and the ones under both lines of text.
-   *
-   * Mixed from the circle's own dark end instead of picked. They used to be hardcoded pink
-   * (`rgba(109, 20, 60, 0.32)` inside, `rgba(96, 16, 52, 0.45)` and `0.4` under the text), so
-   * recolouring the circle left three pink shadows behind.
-   */
-  --disc-shade: color-mix(in srgb, var(--disc-bottom) 40%, #04102a);
+  /* Replace this outright for a face that is not a two-stop top-to-bottom gradient. */
+  --disc-face: linear-gradient(180deg, var(--disc-top), var(--disc-bottom));
 
   /** How hard the mesh bites, as the most it darkens the disc by. 0.22 is osu!'s own subtleness. */
   --mesh: 0.22;
@@ -246,10 +240,11 @@
   font-size: var(--size);
   border-radius: 50%;
   background: #ffffff;
-  /* Down and slightly right, as the reference: the disc sits above the page rather than in it. */
+  /* Down and slightly right, as the reference: the disc sits above the page rather than in it.
+     Neutral black, so it only deepens whatever the disc sits on instead of tinting it. */
   box-shadow:
-    0 0.09em 0.2em -0.07em rgba(4, 16, 42, 0.55),
-    0 0.02em 0.05em rgba(4, 16, 42, 0.2);
+    0 0.09em 0.2em -0.07em rgba(0, 0, 0, 0.5),
+    0 0.02em 0.05em rgba(0, 0, 0, 0.18);
 }
 
 /* The ring is the disc's own white showing through: an inset of 5.5% per side leaves 11% of the
@@ -260,11 +255,15 @@
   overflow: hidden;
   border-radius: 50%;
   /* A linear gradient, never a radial one - osu!'s guidelines call that out by name, because a
-     radial gradient lands the ring and the middle element in completely different colours. */
-  background: linear-gradient(180deg, var(--disc-top), var(--disc-bottom));
-  /* The inner shadow. It reads as the disc being lit from the top: darkest where the ring meets it,
-     which is what stops the circle from looking like a flat sticker under the white. */
-  box-shadow: inset 0 0 0.1em 0.03em color-mix(in srgb, var(--disc-shade) 60%, transparent);
+     radial gradient lands the ring and the middle element in completely different colours. The
+     face colour itself is the only hue on the disc; see `--disc-face`. */
+  background: var(--disc-face);
+  /* Neutral shading, so it reads the same on any face: a black inset that darkens where the ring
+     meets it, and a white lift along the top that catches the light. Both are plain black and
+     white with alpha, so neither has a hue to re-pick when the face changes. */
+  box-shadow:
+    inset 0 0 0.1em 0.03em rgba(0, 0, 0, 0.3),
+    inset 0 0.03em 0.12em rgba(255, 255, 255, 0.2);
   /* Holds the mesh's blend inside the disc. Without it the blend would reach through to the sky. */
   isolation: isolate;
 }
@@ -279,12 +278,18 @@
      large enough to span the fade shows the gradient *inside itself* - which is what osu!'s own
      artwork does. Small triangles cannot show that: each one sits inside a narrow band of the
      gradient, so every triangle ends up evenly faded and the whole thing reads as a set of ghosts.
-     That is a size problem, not a mask problem, and it is why the triangles are as big as they are. */
+     That is a size problem, not a mask problem, and it is why the triangles are as big as they are.
+
+     The profile is one smooth ramp, no plateaus and no corners: very faint at the top, clearly
+     readable through the middle, strongest at the bottom. Every stop is a fraction of `--mesh`, so
+     the whole thing scales with the one strength knob. */
   mask-image: linear-gradient(
     to bottom,
-    rgba(0, 0, 0, calc(var(--mesh) * 0.3)),
-    rgba(0, 0, 0, calc(var(--mesh) * 0.6)) 45%,
-    rgba(0, 0, 0, var(--mesh)) 78%
+    rgba(0, 0, 0, calc(var(--mesh) * 0.01)),
+    rgba(0, 0, 0, calc(var(--mesh) * 0.32)) 25%,
+    rgba(0, 0, 0, calc(var(--mesh) * 0.58)) 50%,
+    rgba(0, 0, 0, calc(var(--mesh) * 0.76)) 75%,
+    rgba(0, 0, 0, var(--mesh))
   );
 }
 
@@ -297,8 +302,9 @@
   height: calc(100% + 0.9em);
   background-repeat: repeat;
   background-size: 0.9em 0.9em;
-  /* The mesh is black and multiplied into the disc, so it darkens whatever colour the disc is - the
-     one thing that makes `--disc-top` and `--disc-bottom` safe to change on their own. */
+  /* The mesh is black and multiplied into the disc, so it darkens whatever colour the face is
+     rather than carrying a colour of its own - which is what lets the face be repainted freely. On
+     a very dark face it goes quiet by design; `--mesh` is the strength knob. */
   mix-blend-mode: multiply;
   /* 0.9em of travel, matching the tile. 40s is slow on purpose: the mesh is a texture the disc has,
      not something moving on top of it. */
@@ -330,7 +336,7 @@
   color: #ffffff;
   /* The wordmark is artwork, not text: it carries a shadow the way the mark's does. The full-colour
      cookie's shadow is part of the logo, so it is not decoration here. */
-  text-shadow: 0 0.045em 0.07em color-mix(in srgb, var(--disc-shade) 50%, transparent);
+  text-shadow: 0 0.045em 0.07em rgba(0, 0, 0, 0.45);
 }
 
 .osu-disc__sub {
@@ -342,7 +348,7 @@
   line-height: 1;
   letter-spacing: 0.08em;
   color: #ffffff;
-  text-shadow: 0 0.04em 0.07em color-mix(in srgb, var(--disc-shade) 45%, transparent);
+  text-shadow: 0 0.04em 0.07em rgba(0, 0, 0, 0.4);
 }
 
 @keyframes osu-beat {
