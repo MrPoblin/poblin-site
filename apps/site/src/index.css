@@ -312,6 +312,48 @@
     inset 0 0.03em 0.12em rgba(255, 255, 255, 0.2);
 }
 
+/*
+ * The click flash.
+ *
+ * A white veil over the face only, so the ring, the text and the neutral shading all stay put and
+ * just the colour blows out for a moment. It is a fixed one-shot beat rather than something tied to
+ * `:active`, which a link keeps until the next page commits - the disc would otherwise sit white
+ * under the pointer for the whole load. `is-flashing` goes on at pointerdown and comes off on
+ * `animationend`, so it plays out and returns to normal whether the click was a flick or a hold.
+ *
+ * Half opacity, not full: the mesh, the ring's shade and the wordmark all stay legible through it, so
+ * it reads as a flash rather than the disc being replaced by a white sticker.
+ */
+.osu-disc__flash {
+  position: absolute;
+  inset: 0;
+  border-radius: 50%;
+  background: #ffffff;
+  opacity: 0;
+  pointer-events: none;
+}
+
+.osu-disc__flash.is-flashing {
+  animation: osu-disc-flash 300ms ease-out;
+}
+
+@keyframes osu-disc-flash {
+  0% {
+    opacity: 0;
+  }
+  /* Front-loaded: most of the way there in the first frames, then eased off, which reads as a flash
+     rather than a slow brighten. */
+  5% {
+    opacity: 0.6;
+  }
+  15% {
+    opacity: 0.6;
+  }
+  100% {
+    opacity: 0;
+  }
+}
+
 /**
  * The disc's hover rainbow.
  *

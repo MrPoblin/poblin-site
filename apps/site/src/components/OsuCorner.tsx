@@ -101,6 +101,37 @@ function mesh(): string {
   return `url("data:image/svg+xml,${encodeURIComponent(svg)}")`;
 }
 
+/**
+ * Plays the click flash once, then takes the class off again.
+ *
+ * The flash is driven by a class rather than `:active` so that it is a fixed beat: it plays out and
+ * returns to normal whether the press was a flick or a hold, and a slow navigation cannot leave the
+ * disc white under the pointer while the page loads. `:active` cannot promise that - it lasts as long
+ * as the browser keeps the press, which for a link is often until the next page commits.
+ */
+function useClickFlash(ref: RefObject<HTMLAnchorElement | null>) {
+  useEffect(() => {
+    const el = ref.current;
+    const flash = el?.querySelector<HTMLElement>(".osu-disc__flash");
+    if (!el || !flash) return;
+
+    const onDown = () => {
+      // Drop and re-add across a reflow so a second press during the beat restarts it.
+      flash.classList.remove("is-flashing");
+      void flash.offsetWidth;
+      flash.classList.add("is-flashing");
+    };
+    const onEnd = () => flash.classList.remove("is-flashing");
+
+    el.addEventListener("pointerdown", onDown);
+    flash.addEventListener("animationend", onEnd);
+    return () => {
+      el.removeEventListener("pointerdown", onDown);
+      flash.removeEventListener("animationend", onEnd);
+    };
+  }, [ref]);
+}
+
 const MESH = mesh();
 
 /**
@@ -178,6 +209,7 @@ function useRainbowFollow(ref: RefObject<HTMLAnchorElement | null>) {
 export function OsuCorner({ offset }: { offset: number }) {
   const linkRef = useRef<HTMLAnchorElement | null>(null);
   useRainbowFollow(linkRef);
+  useClickFlash(linkRef);
 
   return (
     <section
@@ -227,6 +259,7 @@ export function OsuCorner({ offset }: { offset: number }) {
                     />
                   </span>
                   <span className="osu-disc__shade" aria-hidden="true" />
+                  <span className="osu-disc__flash" aria-hidden="true" />
                 </span>
                 <span className="osu-disc__text">
                   <span className="osu-disc__word">osu!</span>
