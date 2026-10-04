@@ -329,11 +329,14 @@
 
 .osu-disc__rainbow-fill {
   position: absolute;
-  /* Overshoots the disc so the fill's own turn never uncovers a corner under the round clip. */
-  inset: -14%;
+  /* Overshoots far enough that neither the turn nor the pointer follow can slide the wheel off the
+     visible circle. The follow reaches the disc's own rim, which is about half the disc from centre,
+     so the fill has to clear that plus the face radius. */
+  inset: -62%;
   background: var(--disc-face-rainbow);
   /* Turning all the time, but only seen while it is uncovered. Paused at rest so a re-hover picks
-     the phase back up instead of snapping to the top. */
+     the phase back up instead of snapping to the top. The turn keyframes carry the pointer offset
+     too, so following the pointer and spinning are one transform on one element. */
   animation: osu-disc-turn 18s linear infinite;
   animation-play-state: paused;
 }
@@ -350,8 +353,15 @@
 }
 
 @keyframes osu-disc-turn {
+  /* Both ends carry the same translate, so the only thing the animation moves is the angle. The
+     translate is listed first, which makes the turn happen about the disc's own centre and then
+     applies the offset in screen space - the other order would swing the offset around with the
+     turn, which is exactly what the rainbow's centre must not do. */
+  from {
+    transform: translate(var(--disc-rainbow-x, 0px), var(--disc-rainbow-y, 0px)) rotate(0deg);
+  }
   to {
-    transform: rotate(360deg);
+    transform: translate(var(--disc-rainbow-x, 0px), var(--disc-rainbow-y, 0px)) rotate(360deg);
   }
 }
 

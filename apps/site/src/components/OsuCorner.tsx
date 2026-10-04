@@ -1,3 +1,6 @@
+import { useEffect, useRef } from "react";
+import type { RefObject } from "react";
+
 /**
  * The osu! corner — the first of the projects under the links, and the way into `/osu/`.
  *
@@ -100,7 +103,82 @@ function mesh(): string {
 
 const MESH = mesh();
 
+/**
+ * Slides the point the hover rainbow's hues fan out from toward the pointer.
+ *
+ * Only the gradient moves: the mesh, the text and the disc itself stay exactly where they are, which
+ * is what separates this from moving the whole disc. The offset goes to two custom properties on the
+ * link, which the fill inherits and reads inside its turn keyframes - translate first, turn second -
+ * so the turn stays about the disc's own centre while the offset is applied in screen space. The
+ * other order would carry the offset around in a circle with the spin.
+ *
+ * One rAF write per frame at most, because a high-polling mouse fires far more often than the screen
+ * refreshes, and gated to fine pointers and to visitors who have not asked for less motion.
+ */
+const FOLLOW = 1;
+const MAX_FOLLOW = 0.5;
+
+function useRainbowFollow(ref: RefObject<HTMLAnchorElement | null>) {
+  useEffect(() => {
+    const el = ref.current;
+    if (!el) return;
+    if (!window.matchMedia("(hover: hover) and (pointer: fine)").matches) return;
+    if (window.matchMedia("(prefers-reduced-motion: reduce)").matches) return;
+
+    let raf = 0;
+    const target = { x: 0, y: 0 };
+
+    const flush = () => {
+      raf = 0;
+      el.style.setProperty("--disc-rainbow-x", `${target.x}px`);
+      el.style.setProperty("--disc-rainbow-y", `${target.y}px`);
+    };
+
+    const onMove = (event: PointerEvent) => {
+      const rect = el.getBoundingClientRect();
+      /* The link is scaled up on hover, and a transform inside a scaled box is scaled with it, so a
+         translate equal to the pointer's offset would land further out than the pointer - exact at
+         the centre and drifting wider toward the rim. Dividing by the live scale cancels it. The
+         scale is also mid-transition for the first frames of a hover, so it is read every move
+         rather than cached. */
+      const scale = el.offsetWidth ? rect.width / el.offsetWidth : 1;
+
+      let x = (event.clientX - (rect.left + rect.width / 2)) * FOLLOW;
+      let y = (event.clientY - (rect.top + rect.height / 2)) * FOLLOW;
+      // Clamp in screen px against the disc's real radius, then convert back to the fill's own px.
+      const max = rect.width * MAX_FOLLOW;
+      const distance = Math.hypot(x, y);
+      if (distance > max) {
+        x = (x / distance) * max;
+        y = (y / distance) * max;
+      }
+      target.x = x / scale;
+      target.y = y / scale;
+      if (!raf) raf = requestAnimationFrame(flush);
+    };
+
+    const release = () => {
+      target.x = 0;
+      target.y = 0;
+      if (!raf) raf = requestAnimationFrame(flush);
+    };
+
+    el.addEventListener("pointermove", onMove);
+    el.addEventListener("pointerleave", release);
+    el.addEventListener("pointercancel", release);
+    return () => {
+      el.removeEventListener("pointermove", onMove);
+      el.removeEventListener("pointerleave", release);
+      el.removeEventListener("pointercancel", release);
+      if (raf) cancelAnimationFrame(raf);
+    };
+  }, [ref]);
+}
+
 export function OsuCorner({ offset }: { offset: number }) {
+  const linkRef = useRef<HTMLAnchorElement | null>(null);
+  useRainbowFollow(linkRef);
+
   return (
     <section
       id="projects"
@@ -123,6 +201,7 @@ export function OsuCorner({ offset }: { offset: number }) {
       <ul className="flex flex-wrap items-start justify-center gap-6">
         <li className="list-none">
           <a
+            ref={linkRef}
             className="osu-corner__link"
             href="/osu/"
             /**
