@@ -135,6 +135,11 @@ export function OsuCorner({ offset }: { offset: number }) {
                 {/* The pink face is a child and not the disc itself, so the disc's own white shows
                     as the ring around it. It carries the clip, so the mesh is cut to the circle. */}
                 <span className="osu-disc__face">
+                  {/* The hover rainbow is its own layer so it can bloom in and turn while the
+                      resting face, the mesh and the text stay exactly as they are. */}
+                  <span className="osu-disc__rainbow" aria-hidden="true">
+                    <span className="osu-disc__rainbow-fill" />
+                  </span>
                   <span className="osu-disc__mesh">
                     <span
                       className="osu-disc__tri"
@@ -142,6 +147,7 @@ export function OsuCorner({ offset }: { offset: number }) {
                       style={{ backgroundImage: MESH }}
                     />
                   </span>
+                  <span className="osu-disc__shade" aria-hidden="true" />
                 </span>
                 <span className="osu-disc__text">
                   <span className="osu-disc__word">osu!</span>
