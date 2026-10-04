@@ -20,7 +20,6 @@ import {
   FACE_FADE_VH,
   ORBIT_DEG_PER_VH,
   RING_SPREAD_END,
-  STAGE_VH,
   SUN_GAP,
   SUN_SETTLE_SCALE,
   SUN_SETTLE_VH,
@@ -29,22 +28,20 @@ import {
   TITLE_TOP,
   sunRadius,
 } from "./lib/scene";
+import { STACK_GAP, stageLayout, useLinksBottom } from "./lib/stage";
 import { useMediaQuery, useViewport } from "./lib/viewport";
 import { twitchEmbedUrl, useTwitchChannels } from "./lib/twitch";
 
 /**
- * Scroll travel of the pinned stage lives in `lib/scene`, because the stream
- * section's overlap is derived from it. What is left here is the point at which
- * the categories unfold within that travel.
- */
-const TRIGGER = 0.65;
-/**
  * Scrolling before the categories unfold, in viewport heights.
  *
- * On a phone there is no pinned stage to take a fraction of, but the unfold
- * still wants the same trigger point, so it is stated once and used for both.
+ * The unfold has to finish while the hero is still pinned, and the pin is always
+ * longer than this (`lib/stage` guarantees it), so the trigger is stated on its
+ * own rather than as a slice of the stage. On a phone there is no pin to take a
+ * fraction of, but the unfold still wants the same point, so one number serves
+ * both.
  */
-const REVEAL_VH = TRIGGER * (STAGE_VH - 100);
+const REVEAL_VH = 13;
 
 /**
  * The fixed header is parked for now - flip this back to true to bring it back.
@@ -82,6 +79,8 @@ export default function App() {
   const [seed] = useState(visitSeed);
 
   const stageRef = useRef<HTMLElement | null>(null);
+  /** the pinned box the links sit in - measured to place the block below it */
+  const heroRef = useRef<HTMLDivElement | null>(null);
   const sentinelRef = useRef<HTMLDivElement | null>(null);
 
   /**
@@ -103,6 +102,20 @@ export default function App() {
    * does not appear.
    */
   const showLoop = !mainLive && !loopOffline;
+
+  /**
+   * The links block's open height, measured, and the stage that follows from it.
+   * The hero's length and the block-below's pull are one decision, so they are
+   * computed together; nothing here is a hand-tuned pixel value.
+   */
+  const linksBottom = useLinksBottom(heroRef, mainLive);
+  const { stageHeight, nextOffset } = stageLayout({
+    viewportH: h,
+    linksBottom,
+  });
+  // A phone has no pinned stage, so the block below simply follows the links at
+  // the same stack gap; there is no leftover viewport to reclaim.
+  const projectsOffset = isDesktop ? nextOffset : STACK_GAP;
 
   const sunR = sunRadius(w, h);
   const titleTop = isDesktop ? TITLE_TOP.desktop : TITLE_TOP.mobile;
@@ -249,7 +262,7 @@ export default function App() {
           id="top"
           ref={stageRef}
           className="relative"
-          style={isDesktop ? { height: `${STAGE_VH}vh` } : undefined}
+          style={isDesktop ? { height: `${stageHeight}px` } : undefined}
         >
           {/* Marks the point where the categories unfold. It is here on a phone
               too: there is no pinned stage to take a fraction of, so it is
@@ -262,6 +275,7 @@ export default function App() {
           />
 
           <div
+            ref={heroRef}
             className={
               isDesktop
                 ? "sticky top-0 flex h-[100dvh] flex-col justify-start"
@@ -304,7 +318,7 @@ export default function App() {
 
         {/* The projects, under the links and above the 24/7 stream: the corner is the first one,
             and the ones after it land beside it rather than below. */}
-        <OsuCorner />
+        <OsuCorner offset={projectsOffset} />
 
         {showLoop ? <StreamSection /> : null}
       </main>

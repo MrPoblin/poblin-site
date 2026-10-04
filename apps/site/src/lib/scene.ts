@@ -4,17 +4,6 @@ export const SUN_TOP = 21.5;
 export const SUN_IMAGE = "/assets/poblin-sun.webp";
 
 /**
- * Scroll travel of the pinned stage, in viewport heights.
- *
- * The hero holds the screen for this long while the sun settles and the
- * categories unfold. Everything past one viewport height is pure overlap, and the
- * stream section rides up over exactly that overlap as you scroll - which is why
- * this number lives here: the stage's length and the section's offset are one
- * decision, and splitting them across two files is how they drift apart.
- */
-export const STAGE_VH = 120;
-
-/**
  * Below this width the page is the phone layout: the copy stacks, the title is
  * not pinned, and the sun does not settle. The breakpoint lives here because the
  * sun's size and the scroll behaviour both key off it.

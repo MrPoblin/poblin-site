@@ -1,11 +1,19 @@
 import type { CSSProperties } from "react";
-import { AnimatePresence, motion } from "motion/react";
+import { motion, type Transition } from "motion/react";
 import { ArrowUpRight, CaretDown } from "@phosphor-icons/react";
 import { categories, type Category } from "../data/links";
 import { BrandIcon } from "./BrandIcon";
 
 const brandOf = (category: Category) =>
   `#${category.glyph?.hex ?? "14509c"}`;
+
+/**
+ * Opening is eager and front-loaded, closing is even. The eager curve covers most
+ * of the distance in its first few frames, which reads as a jump when it is played
+ * in reverse - hence two of them.
+ */
+const OPEN: Transition = { duration: 0.34, ease: [0.16, 1, 0.3, 1] };
+const CLOSE: Transition = { duration: 0.3, ease: [0.4, 0, 0.2, 1] };
 
 function CategoryCard({
   category,
@@ -63,27 +71,22 @@ function CategoryCard({
 
   return (
     <motion.li layout className="list-none">
-      {/* One tree for both states. Swapping the whole card - a link when closed,
-          a panel when open - used to unmount the rows, so the exit animation
-          never ran and a closing card emptied in a single frame and deflated as
-          a hollow pill. Only the header changes element now, and the rows always
-          animate out. */}
+      {/* One tree for both states, and it is always mounted. The entries keep
+          their natural height while the clip box is closed, which is what lets
+          the block below be placed against the open bottom before anything has
+          been opened - a list that unmounted had nothing to measure. The three
+          `data-links-*` hooks below are what `lib/stage` reads to do that.
+
+          The radius is deliberately not animated and not swapped for
+          `rounded-full`: that class resolves to a six-figure px value, so any
+          transition toward it hands the browser a clamped radius of half the
+          height the instant it starts, and the corners jump outwards and shrink.
+          A constant 26px is already a pill on a 48px chip, so the shape morphs
+          continuously as the card grows. */}
       <motion.div
-        style={{
-          ...brandStyle,
-          // Only the padding is transitioned. The radius is deliberately NOT
-          // animated and NOT swapped for `rounded-full`: that class resolves to
-          // ~22 million px, so any transition toward it hands the browser a
-          // clamped radius of half the height the instant it starts - the
-          // corners jump outwards and then shrink, which reads as a pulse. A
-          // constant 26px is already a pill on a 48px chip (26 > 48/2, so it
-          // clamps to 24), so the shape morphs continuously instead: 26px while
-          // the card is taller than 52px, then the clamp takes it to 24px.
-          transition: "padding 140ms ease-out",
-        }}
-        className={`glass-panel group w-full rounded-[26px] ${
-          open ? "p-2" : "p-1.5"
-        }`}
+        data-links-card
+        style={brandStyle}
+        className="glass-panel group w-full rounded-[26px] p-2"
       >
         {isLink ? (
           <a
@@ -106,58 +109,49 @@ function CategoryCard({
           </motion.button>
         )}
 
-        <AnimatePresence initial={false}>
-          {open ? (
-            <motion.ul
-              key="entries"
-              initial={{ height: 0, opacity: 0 }}
-              animate={{ height: "auto", opacity: 1 }}
-              // The eager, front-loaded curve feels right opening a panel and
-              // reads as a jump closing one - it covers most of the distance in
-              // the first couple of frames and then creeps. Closing gets an even
-              // curve instead.
-              exit={{
-                height: 0,
-                opacity: 0,
-                transition: { duration: 0.3, ease: [0.4, 0, 0.2, 1] },
-              }}
-              transition={{ duration: 0.34, ease: [0.16, 1, 0.3, 1] }}
-              className="overflow-hidden"
-            >
-              {category.entries.map((entry) => (
-                <li key={entry.id}>
-                  <a
-                    className="link-row"
-                    href={entry.href}
-                    target="_blank"
-                    rel="noreferrer"
-                  >
-                    <span className="flex min-w-0 items-center gap-2">
-                      <BrandIcon
-                        glyph={entry.glyph}
-                        fallback={entry.fallback}
-                        className="h-3.5 w-3.5 shrink-0 text-ink/70"
-                      />
-                      <span className="flex min-w-0 flex-col">
-                        <span className="truncate">{entry.name}</span>
-                        {entry.meta ? (
-                          <span className="text-[0.68rem] font-semibold text-ink/60">
-                            {entry.meta}
-                          </span>
-                        ) : null}
-                      </span>
-                    </span>
-                    <ArrowUpRight
-                      weight="bold"
-                      aria-hidden="true"
-                      className="h-3.5 w-3.5 shrink-0 text-ink/35"
+        <motion.div
+          data-links-clip
+          initial={false}
+          animate={{ height: open ? "auto" : 0, opacity: open ? 1 : 0 }}
+          transition={open ? OPEN : CLOSE}
+          className="overflow-hidden"
+          aria-hidden={!open}
+          inert={!open}
+        >
+          <ul data-links-list>
+            {category.entries.map((entry) => (
+              <li key={entry.id}>
+                <a
+                  className="link-row"
+                  href={entry.href}
+                  target="_blank"
+                  rel="noreferrer"
+                >
+                  <span className="flex min-w-0 items-center gap-2">
+                    <BrandIcon
+                      glyph={entry.glyph}
+                      fallback={entry.fallback}
+                      className="h-3.5 w-3.5 shrink-0 text-ink/70"
                     />
-                  </a>
-                </li>
-              ))}
-            </motion.ul>
-          ) : null}
-        </AnimatePresence>
+                    <span className="flex min-w-0 flex-col">
+                      <span className="truncate">{entry.name}</span>
+                      {entry.meta ? (
+                        <span className="text-[0.68rem] font-semibold text-ink/60">
+                          {entry.meta}
+                        </span>
+                      ) : null}
+                    </span>
+                  </span>
+                  <ArrowUpRight
+                    weight="bold"
+                    aria-hidden="true"
+                    className="h-3.5 w-3.5 shrink-0 text-ink/35"
+                  />
+                </a>
+              </li>
+            ))}
+          </ul>
+        </motion.div>
       </motion.div>
     </motion.li>
   );
@@ -176,6 +170,7 @@ export function CategoryGrid({
 }) {
   return (
     <motion.ul
+      data-links-grid
       layout
       className="mx-auto grid w-full max-w-6xl grid-cols-1 items-start gap-2.5 sm:grid-cols-2 lg:grid-cols-4"
     >

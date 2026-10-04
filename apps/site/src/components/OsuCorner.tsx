@@ -1,6 +1,3 @@
-import { DESKTOP_MIN } from "../lib/scene";
-import { useMediaQuery } from "../lib/viewport";
-
 /**
  * The osu! corner — the first of the projects under the links, and the way into `/osu/`.
  *
@@ -102,32 +99,23 @@ function mesh(): string {
 
 const MESH = mesh();
 
-export function OsuCorner() {
-  const isDesktop = useMediaQuery(`(min-width: ${DESKTOP_MIN}px)`);
-
+export function OsuCorner({ offset }: { offset: number }) {
   return (
     <section
       id="projects"
-      className="relative mx-auto w-full max-w-5xl px-5 pb-6 pt-4 sm:pb-8 md:pt-0"
+      className="relative mx-auto w-full max-w-5xl px-5 pb-6 sm:pb-8"
       /**
-       * How far this block rides up over the pinned hero.
+       * How far this block rides up under the pinned hero, in px, from `lib/stage`.
        *
-       * **The one rule: nothing of this block may be on screen before you scroll.** So the pull can
-       * never be more than `20vh`, which is exactly what puts this section's top edge on the fold.
-       * That cap is the constraint everything here is fighting.
+       * Negative on a desktop: the hero is a screen of pinned content anchored to
+       * its top, so the space under the links is whatever the window has left, and
+       * the block is pulled up by exactly that much so it lands one stack gap below
+       * the links. It is derived from the links' measured height, so adding a link
+       * moves this block instead of changing the gap.
        *
-       * Within it, the disc sits as close under the links as the cap allows: 24px while the window is
-       * short enough, and the cap takes over above that. A tall window cannot also have a 24px gap,
-       * and that is arithmetic rather than tuning - the hero's content is anchored to the top of a
-       * full-screen box, so the space under the links is `57vh` minus the links' own height; the disc
-       * has to stay below the fold, so it can never rise more than `20vh`; what is left is
-       * `0.37vh - 340px`. At 900px tall that is nothing and the 24px wins. At 1300px it is 141px and
-       * no arrangement of this block can shrink it, because the empty space is in the hero.
-       *
-       * `340px` is the links' measured height below the title, so the arithmetic is visible rather
-       * than magic. Add links and it grows with them.
+       * A phone has no pinned hero, so the offset is the plain stack gap.
        */
-      style={isDesktop ? { marginTop: "max(-20vh, calc(364px - 57vh))" } : undefined}
+      style={{ marginTop: offset }}
     >
       {/* A list rather than a single centred item: the next project is one more child, and the row
           already centres and wraps when there is more than one. */}
